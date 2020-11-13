@@ -11,20 +11,20 @@ import (
 )
 
 var (
-	Debug bool
+	debug bool
 )
 
-func init() {
+func initLogs() error {
 	if os.Getenv("DEBUG") == "true" {
-		Debug = true
+		debug = true
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 	f, err := os.OpenFile("/var/log/console.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755) //0600)
 	if err != nil {
-		fmt.Println("failed to open log file")
-		return
+		return err
 	}
 	logrus.SetOutput(f)
+	return nil
 }
 
 // Console is the structure of the harvester console
@@ -38,6 +38,9 @@ type Console struct {
 func RunConsole() error {
 	c, err := NewConsole()
 	if err != nil {
+		return err
+	}
+	if err := initLogs(); err != nil {
 		return err
 	}
 	return c.doRun()
@@ -107,7 +110,7 @@ func (c *Console) doRun() error {
 
 func setGlobalKeyBindings(g *gocui.Gui) error {
 	g.InputEsc = true
-	if Debug {
+	if debug {
 		if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 			return err
 		}
