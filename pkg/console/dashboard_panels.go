@@ -76,9 +76,9 @@ func (c *Console) layoutDashboard(g *gocui.Gui) error {
 		v.Frame = false
 		fmt.Fprintf(v, "Role of the node: \n\n")
 		if current.isMaster {
-			fmt.Fprintf(v, wrapColor("Management", colorBlue))
+			fmt.Fprintf(v, "Management")
 		} else {
-			fmt.Fprintf(v, wrapColor("Compute", colorBlue))
+			fmt.Fprintf(v, "Compute")
 		}
 	}
 	if v, err := g.SetView("status", maxX/2-40, 18, maxX/2+40, 22); err != nil {
