@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-source $(dirname $0)/version
-
 cd $(dirname $0)/..
 
 echo "Start building ISO"
@@ -16,14 +14,21 @@ OFFLINE_BUILD="1"
 
 git clone --branch ${K3OS_VERSION} --single-branch --depth 1 https://github.com/rancher/k3os.git
 
-# Prepare Harvester, Longhorn charts
+# Prepare Harvester chart
 mkdir -p k3os/images/70-iso/charts
-harvester_chart_path=../harvester/deploy/charts/harvester
-if [ ! -d ${harvester_chart_path} ];then
-    git clone --branch master --single-branch --depth 1 https://github.com/rancher/harvester.git /tmp/harvester
-    harvester_chart_path=/tmp/harvester/deploy/charts/harvester
+harvester_path=../harvester
+if [ ! -d ${harvester_path} ];then
+    git clone --branch master --single-branch --depth 1 https://github.com/rancher/harvester.git /tmp/harveste
+    harvester_path=/tmp/harvester
 fi
-helm package ${harvester_chart_path} -d k3os/images/70-iso/charts
+
+pushd ${harvester_path}
+helm package ./deploy/charts/harvester -d k3os/images/70-iso/charts
+source scripts/version
+HARVESTER_VERSION=${VERSION}
+popd
+
+# Prepare Longhorn chart
 git clone --branch ${LONGHORN_VERSION} --single-branch --depth 1 https://github.com/rancher/longhorn.git /tmp/longhorn
 helm package /tmp/longhorn/chart -d k3os/images/70-iso/charts
 
@@ -69,3 +74,4 @@ cd scripts
 ./default
 mkdir -p ../../dist/artifacts
 cp ../dist/artifacts/* ../../dist/artifacts
+
