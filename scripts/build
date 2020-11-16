@@ -47,6 +47,7 @@ cp /tmp/cni/{bridge,flannel,host-local,loopback,portmap,static} k3os/images/70-i
 image_list_file='scripts/image-list.txt'
 curl ${K3S_IMAGE_URL}>>${image_list_file}
 curl ${LONGHORN_IMAGE_URL}>>${image_list_file}
+echo "docker.io/rancher/harvester:${HARVESTER_VERSION}">>${image_list_file}
 
 output_image_tar_file="k3os/images/70-iso/harvester-images.tar"
 if [ -n "${OFFLINE_BUILD}" ] && [ ! -f $output_image_tar_file.zst ]; then
