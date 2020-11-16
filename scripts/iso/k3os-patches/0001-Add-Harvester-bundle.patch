@@ -1,7 +1,7 @@
 From 1fad08e4633bc724b697d6c74c84492b64aa9569 Mon Sep 17 00:00:00 2001
 From: gitlawr <lawrleegle@gmail.com>
 Date: Mon, 2 Nov 2020 10:30:49 +0800
-Subject: [PATCH] Add Harvester bundle
+Subject: [PATCH 1/2] Add Harvester bundle
 
 ---
  images/20-progs/Dockerfile                    |  3 +

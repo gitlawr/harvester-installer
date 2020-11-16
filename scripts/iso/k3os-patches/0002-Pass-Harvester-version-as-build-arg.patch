@@ -1,0 +1,37 @@
+From 1ea35c2c9b3f03fb244b10f92370567cf91b53c6 Mon Sep 17 00:00:00 2001
+From: gitlawr <lawrleegle@gmail.com>
+Date: Mon, 16 Nov 2020 11:44:49 +0800
+Subject: [PATCH 2/2] Pass Harvester version as build arg
+
+---
+ images/10-gobuild/gobuild  | 4 +++-
+ images/20-progs/Dockerfile | 1 +
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/images/10-gobuild/gobuild b/images/10-gobuild/gobuild
+index 5a1b6d3..99ea91d 100755
+--- a/images/10-gobuild/gobuild
++++ b/images/10-gobuild/gobuild
+@@ -1,4 +1,6 @@
+ #!/bin/bash
+ 
+ LINKFLAGS=${LINKFLAGS:-"-extldflags -static -s"}
+-exec env CGO_ENABLED=0 go build -ldflags "-X github.com/rancher/k3os/pkg/version.Version=$VERSION $LINKFLAGS" "$@"
++VERSIONFLAGS="-X github.com/rancher/k3os/pkg/version.Version=$VERSION
++-X github.com/rancher/harvester-installer/pkg/version.Version=$HARVESTER_VERSION"
++exec env CGO_ENABLED=0 go build -ldflags "$VERSIONFLAGS $LINKFLAGS" "$@"
+diff --git a/images/20-progs/Dockerfile b/images/20-progs/Dockerfile
+index eb3260c..39ec5e7 100644
+--- a/images/20-progs/Dockerfile
++++ b/images/20-progs/Dockerfile
+@@ -13,6 +13,7 @@ RUN gobuild -o /output/metadata
+ 
+ FROM gobuild as k3os
+ ARG VERSION
++ARG HARVESTER_VERSION
+ # COPY /cmd/ $GOPATH/src/github.com/rancher/k3os/cmd/
+ COPY /pkg/ $GOPATH/src/github.com/rancher/k3os/pkg/
+ COPY /main.go $GOPATH/src/github.com/rancher/k3os/
+-- 
+2.20.1 (Apple Git-117)
+
