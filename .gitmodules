@@ -1,0 +1,3 @@
+[submodule "k3os"]
+	path = k3os
+	url = https://github.com/rancher/k3os
