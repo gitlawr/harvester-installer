@@ -11,5 +11,3 @@ metadata:
 spec:
   chart: https://%{KUBERNETES_API}%/static/charts/longhorn-1.0.2.tgz
   targetNamespace: longhorn-system
-  set:
-    persistence.defaultClassReplicaCount: 1

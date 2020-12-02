@@ -9,7 +9,7 @@ echo "Start building ISO"
 
 K3S_VERSION=v1.18.9+k3s1
 K3S_IMAGE_URL=https://raw.githubusercontent.com/rancher/k3s/${K3S_VERSION}/scripts/airgap/image-list.txt
-LONGHORN_VERSION=v1.0.2
+LONGHORN_VERSION=master
 LONGHORN_IMAGE_URL=https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_VERSION}/deploy/longhorn-images.txt
 OFFLINE_BUILD="1"
 
@@ -38,7 +38,8 @@ cp /tmp/cni/{bridge,flannel,host-local,loopback,portmap,static} k3os/images/70-i
 # Offline docker images
 image_list_file='scripts/image-list.txt'
 curl ${K3S_IMAGE_URL}>>${image_list_file}
-curl ${LONGHORN_IMAGE_URL}>>${image_list_file}
+# FIXME remove the sed substitution when bumping the longhorn version
+curl ${LONGHORN_IMAGE_URL}|sed -e 's/v1.0.2/master/g'>>${image_list_file}
 
 output_image_tar_file="k3os/images/70-iso/harvester-images.tar"
 if [ -n "${OFFLINE_BUILD}" ] && [ ! -f $output_image_tar_file.zst ]; then
