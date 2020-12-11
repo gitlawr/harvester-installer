@@ -13,5 +13,5 @@ docker.io/kubevirt/virt-launcher:v0.35.0
 docker.io/kubevirt/virt-operator:v0.35.0
 docker.io/library/alpine:3
 docker.io/minio/minio:RELEASE.2020-11-19T23-48-16Z
-docker.io/rancher/harvester:master-head
-docker.io/rancher/harvester-network-controller:master-head
+docker.io/rancher/harvester:v0.1.0-rc1
+docker.io/rancher/harvester-network-controller:v0.1.0
