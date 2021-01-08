@@ -1,2 +1,15 @@
 #!/bin/bash
+set -e
 
+source $(dirname $0)/version
+
+cd $(dirname $0)/../package
+
+IMAGE=${REPO}/harvester-bundle:${HARVESTER_TAG}
+DOCKERFILE=Dockerfile
+if [ -e ${DOCKERFILE}.${ARCH} ]; then
+    DOCKERFILE=${DOCKERFILE}.${ARCH}
+fi
+
+docker build --build-arg TAG=$TAG --build-arg REPO=$REPO -f ${DOCKERFILE} -t ${IMAGE} .
+echo Built ${IMAGE}
