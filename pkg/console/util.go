@@ -277,19 +277,46 @@ func doInstall(g *gocui.Gui, cloudConfig *k3os.CloudConfig) error {
 	scanner := bufio.NewScanner(stdout)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		printToInstallPanel(g, scanner.Text())
+		printToPanel(g, scanner.Text(), installPanel)
 	}
 	scanner = bufio.NewScanner(stderr)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		printToInstallPanel(g, scanner.Text())
+		printToPanel(g, scanner.Text(), installPanel)
 	}
 	return nil
 }
 
-func printToInstallPanel(g *gocui.Gui, message string) {
+func doUpgrade(g *gocui.Gui) error {
+	cmd := exec.Command("/k3os/system/k3os/current/harvester-upgrade.sh")
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		printToPanel(g, scanner.Text(), upgradePanel)
+	}
+	scanner = bufio.NewScanner(stderr)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		printToPanel(g, scanner.Text(), upgradePanel)
+	}
+	return nil
+}
+
+func printToPanel(g *gocui.Gui, message string, panelName string) {
 	g.Update(func(g *gocui.Gui) error {
-		v, err := g.View(installPanel)
+		v, err := g.View(panelName)
 		if err != nil {
 			return err
 		}
@@ -318,6 +345,19 @@ func getRemoteConfig(configURL string) (*config.HarvesterConfig, error) {
 		return nil, err
 	}
 	return harvestCfg, nil
+}
+
+// harvesterInstalled check existing harvester installation by partition label
+func harvesterInstalled() (bool, error) {
+	output, err := exec.Command("blkid", "-L", "HARVESTER_STATE").CombinedOutput()
+	if err != nil {
+		return false, err
+	}
+	if string(output) != "" {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func dupStrings(src []string) []string {
