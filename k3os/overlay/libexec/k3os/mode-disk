@@ -16,14 +16,14 @@ grow()
 setup_mounts()
 {
     mkdir -p $TARGET
-    mount -L K3OS_STATE $TARGET
+    mount -L HARVESTER_STATE $TARGET
 
     if [ -e $TARGET/k3os/system/growpart ]; then
         read DEV NUM < $TARGET/k3os/system/growpart
         if [ ! -e "${DEV}${NUM}" ]; then
             # /dev/sda2 => /dev/sda2
             # /dev/nvme0n1p2 => /dev/nvme0n1p2
-            PART=$(blkid -L K3OS_STATE)
+            PART=$(blkid -L HARVESTER_STATE)
 
             # /dev/sda2 => /dev/sda
             # /dev/nvme0n1p2 => /dev/nvme0n1
@@ -36,7 +36,7 @@ setup_mounts()
         if [ -e "${PART:=${DEV}${NUM}}" ]; then
             umount $TARGET
             grow $DEV $NUM $PART || true
-            mount -L K3OS_STATE $TARGET
+            mount -L HARVESTER_STATE $TARGET
         fi
         rm -f $TARGET/k3os/system/growpart
     fi

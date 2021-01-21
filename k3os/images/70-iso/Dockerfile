@@ -27,6 +27,7 @@ RUN mkdir -p /usr/src/iso/var/lib/rancher/k3s/agent/images \
     /usr/src/iso/var/lib/rancher/k3s/server/static/charts \
     /usr/src/iso/var/lib/rancher/k3s/server/manifests
 COPY charts/* /usr/src/iso/var/lib/rancher/k3s/server/static/charts
+COPY manifests/* /usr/src/iso/var/lib/rancher/k3s/server/manifests
 RUN --mount=type=bind,source=/,target=/ctx cp /ctx/harvester-images.tar.zst \
     /usr/src/iso/var/lib/rancher/k3s/agent/images &>/dev/null || true
 
