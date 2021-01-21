@@ -82,6 +82,8 @@ func (v ConfigValidator) Validate(cfg *config.HarvesterConfig) error {
 func commonCheck(cfg *config.HarvesterConfig) error {
 	// modes
 	switch mode := cfg.Install.Mode; mode {
+	case modeUpgrade:
+		return nil
 	case modeCreate:
 		if cfg.ServerURL != "" {
 			return errors.New(ErrMsgModeCreateContainsServerURL)

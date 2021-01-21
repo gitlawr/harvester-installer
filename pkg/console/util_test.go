@@ -55,15 +55,6 @@ func TestGetSSHKeysFromURL(t *testing.T) {
 	}
 }
 
-func TestGetHarvesterManifestContent(t *testing.T) {
-	d := map[string]string{
-		"a": "b",
-		"b": "\"c\"",
-	}
-	res := getHarvesterManifestContent(d)
-	t.Log(res)
-}
-
 func TestGetHStatus(t *testing.T) {
 	s := getHarvesterStatus()
 	t.Log(s)

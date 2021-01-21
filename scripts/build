@@ -21,6 +21,11 @@ fi
 harvester_chart_path=${harvester_path}/deploy/charts/harvester
 helm package ${harvester_chart_path} -d k3os/images/70-iso/charts
 
+# Prepare Harvester manifests
+HARVESTER_CHART=$(ls k3os/images/70-iso/charts/harvester* | xargs basename)
+sed -i 's/$HARVESTER_CHART/'$HARVESTER_CHART'/' manifests/harvester.yaml
+cp -r manifests k3os/images/70-iso/
+
 # Offline docker images
 # get image list from harvester chart's values file
 image_list_file='image-list.txt'

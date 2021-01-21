@@ -11,6 +11,7 @@ import (
 	"github.com/jroimartin/gocui"
 	"github.com/rancher/harvester-installer/pkg/config"
 	"github.com/rancher/harvester-installer/pkg/util"
+	"github.com/rancher/harvester-installer/pkg/version"
 	"github.com/rancher/harvester-installer/pkg/widgets"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -75,9 +76,11 @@ func setPanels(c *Console) error {
 		addTokenPanel,
 		addProxyPanel,
 		addCloudInitPanel,
-		addConfirmPanel,
+		addConfirmInstallPanel,
+		addConfirmUpgradePanel,
 		addInstallPanel,
 		addSpinnerPanel,
+		addUpgradePanel,
 	}
 	for _, f := range funcs {
 		if err := f(c); err != nil {
@@ -177,7 +180,7 @@ func getDiskOptions() ([]widgets.Option, error) {
 
 func addAskCreatePanel(c *Console) error {
 	askOptionsFunc := func() ([]widgets.Option, error) {
-		return []widgets.Option{
+		options := []widgets.Option{
 			{
 				Value: modeCreate,
 				Text:  "Create a new Harvester cluster",
@@ -185,7 +188,17 @@ func addAskCreatePanel(c *Console) error {
 				Value: modeJoin,
 				Text:  "Join an existing Harvester cluster",
 			},
-		}, nil
+		}
+		installed, err := harvesterInstalled()
+		if err != nil {
+			logrus.Error(err)
+		} else if installed {
+			options = append(options, widgets.Option{
+				Value: modeUpgrade,
+				Text:  "Upgrade Harvester",
+			})
+		}
+		return options, nil
 	}
 	// new cluster or join existing cluster
 	askCreateV, err := widgets.NewSelect(c.Gui, askCreatePanel, "", askOptionsFunc)
@@ -207,11 +220,10 @@ func addAskCreatePanel(c *Console) error {
 			if err != nil {
 				return err
 			}
+			c.config.Install.Mode = selected
 			askCreateV.Close()
-			if selected == modeCreate {
-				c.config.Install.Mode = modeCreate
-			} else {
-				c.config.Install.Mode = modeJoin
+			if selected == modeUpgrade {
+				return showNext(c, confirmUpgradePanel)
 			}
 			return showNext(c, diskPanel)
 		},
@@ -603,7 +615,7 @@ func addCloudInitPanel(c *Console) error {
 			if err != nil {
 				return err
 			}
-			confirmV, err := c.GetElement(confirmPanel)
+			confirmV, err := c.GetElement(confirmInstallPanel)
 			if err != nil {
 				return err
 			}
@@ -624,7 +636,7 @@ func addCloudInitPanel(c *Console) error {
 					"\nYour disk will be formatted and Harvester will be installed with \nthe above configuration. Continue?\n")
 			}
 			g.Cursor = false
-			return showNext(c, confirmPanel)
+			return showNext(c, confirmInstallPanel)
 		},
 		gocui.KeyEsc: func(g *gocui.Gui, v *gocui.View) error {
 			cloudInitV.Close()
@@ -635,7 +647,7 @@ func addCloudInitPanel(c *Console) error {
 	return nil
 }
 
-func addConfirmPanel(c *Console) error {
+func addConfirmInstallPanel(c *Console) error {
 	askOptionsFunc := func() ([]widgets.Option, error) {
 		return []widgets.Option{
 			{
@@ -647,7 +659,7 @@ func addConfirmPanel(c *Console) error {
 			},
 		}, nil
 	}
-	confirmV, err := widgets.NewSelect(c.Gui, confirmPanel, "", askOptionsFunc)
+	confirmV, err := widgets.NewSelect(c.Gui, confirmInstallPanel, "", askOptionsFunc)
 	if err != nil {
 		return err
 	}
@@ -675,7 +687,47 @@ func addConfirmPanel(c *Console) error {
 			return showNext(c, cloudInitPanel)
 		},
 	}
-	c.AddElement(confirmPanel, confirmV)
+	c.AddElement(confirmInstallPanel, confirmV)
+	return nil
+}
+
+func addConfirmUpgradePanel(c *Console) error {
+	askOptionsFunc := func() ([]widgets.Option, error) {
+		return []widgets.Option{
+			{
+				Value: "yes",
+				Text:  "Yes",
+			}, {
+				Value: "no",
+				Text:  "No",
+			},
+		}, nil
+	}
+	confirmV, err := widgets.NewSelect(c.Gui, confirmUpgradePanel, "", askOptionsFunc)
+	if err != nil {
+		return err
+	}
+	confirmV.PreShow = func() error {
+		return c.setContentByName(titlePanel, fmt.Sprintf("Confirm upgrading Harvester to %s?", version.Version))
+	}
+	confirmV.KeyBindings = map[gocui.Key]func(*gocui.Gui, *gocui.View) error{
+		gocui.KeyEnter: func(g *gocui.Gui, v *gocui.View) error {
+			confirmed, err := confirmV.GetData()
+			if err != nil {
+				return err
+			}
+			confirmV.Close()
+			if confirmed == "no" {
+				return showNext(c, askCreatePanel)
+			}
+			return showNext(c, upgradePanel)
+		},
+		gocui.KeyEsc: func(g *gocui.Gui, v *gocui.View) error {
+			confirmV.Close()
+			return showNext(c, askCreatePanel)
+		},
+	}
+	c.AddElement(confirmUpgradePanel, confirmV)
 	return nil
 }
 
@@ -689,12 +741,12 @@ func addInstallPanel(c *Console) error {
 				remoteConfig, err := getRemoteConfig(c.config.Install.ConfigURL)
 				if err != nil {
 					logrus.Error(err.Error())
-					printToInstallPanel(c.Gui, err.Error())
+					printToPanel(c.Gui, err.Error(), installPanel)
 					return
 				}
 				logrus.Info("Remote config: ", remoteConfig)
 				if err := mergo.Merge(c.config, remoteConfig, mergo.WithAppendSlice); err != nil {
-					printToInstallPanel(c.Gui, fmt.Sprintf("fail to merge config: %s", err))
+					printToPanel(c.Gui, fmt.Sprintf("fail to merge config: %s", err), installPanel)
 					return
 				}
 				logrus.Info("Local config (merged): ", c.config)
@@ -703,7 +755,7 @@ func addInstallPanel(c *Console) error {
 				c.config.Hostname = "harvester-" + rand.String(5)
 			}
 			if err := validateConfig(ConfigValidator{}, c.config); err != nil {
-				printToInstallPanel(c.Gui, err.Error())
+				printToPanel(c.Gui, err.Error(), installPanel)
 				return
 			}
 			doInstall(c.Gui, toCloudConfig(c.config))
@@ -722,5 +774,19 @@ func addSpinnerPanel(c *Console) error {
 	asyncTaskV := widgets.NewPanel(c.Gui, spinnerPanel)
 	asyncTaskV.SetLocation(maxX/4, maxY/4+7, maxX/4*3, maxY/4+9)
 	c.AddElement(spinnerPanel, asyncTaskV)
+	return nil
+}
+
+func addUpgradePanel(c *Console) error {
+	maxX, maxY := c.Gui.Size()
+	upgradeV := widgets.NewPanel(c.Gui, upgradePanel)
+	upgradeV.PreShow = func() error {
+		go doUpgrade(c.Gui)
+		return c.setContentByName(footerPanel, "")
+	}
+	upgradeV.Title = " Upgrading Harvester "
+	upgradeV.SetLocation(maxX/8, maxY/8, maxX/8*7, maxY/8*7)
+	c.AddElement(upgradePanel, upgradeV)
+	upgradeV.Frame = true
 	return nil
 }
