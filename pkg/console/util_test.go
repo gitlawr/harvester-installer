@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -55,15 +54,6 @@ func TestGetSSHKeysFromURL(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetHarvesterManifestContent(t *testing.T) {
-	d := map[string]string{
-		"a": "b",
-		"b": "\"c\"",
-	}
-	res := getHarvesterManifestContent(d)
-	t.Log(res)
 }
 
 func TestGetHStatus(t *testing.T) {
@@ -176,14 +166,6 @@ func TestToCloudConfig(t *testing.T) {
 				t.Fatalf("fail to load %q", testCase.resultFile)
 			}
 			cloudConfig := toCloudConfig(cfg)
-
-			if cfg.Mode == modeCreate {
-				// line order in the write file content is random, do our best
-				content := cloudConfig.WriteFiles[0].Content
-				assert.True(t, strings.HasPrefix(content, "apiVersion: v1"))
-				cloudConfig.WriteFiles[0].Content = ""
-				expected.WriteFiles[0].Content = ""
-			}
 
 			assert.Equal(t, expected, cloudConfig)
 		})

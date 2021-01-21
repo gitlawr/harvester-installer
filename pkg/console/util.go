@@ -2,7 +2,6 @@ package console
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
@@ -214,25 +213,6 @@ func toCloudConfig(cfg *config.HarvesterConfig) *k3os.CloudConfig {
 		return cloudConfig
 	}
 
-	var harvesterChartValues = map[string]string{
-		"multus.enabled":                                "true",
-		"longhorn.enabled":                              "true",
-		"minio.persistence.storageClass":                "longhorn",
-		"harvester-network-controller.image.pullPolicy": "IfNotPresent",
-		"containers.apiserver.image.imagePullPolicy":    "IfNotPresent",
-		"containers.apiserver.authMode":                 "localUser",
-		"service.harvester.type":                        "NodePort",
-		"service.harvester.httpsNodePort":               harvesterNodePort,
-	}
-
-	cloudConfig.WriteFiles = []k3os.File{
-		{
-			Owner:              "root",
-			Path:               "/var/lib/rancher/k3s/server/manifests/harvester.yaml",
-			RawFilePermissions: "0600",
-			Content:            getHarvesterManifestContent(harvesterChartValues),
-		},
-	}
 	cloudConfig.K3OS.K3sArgs = append([]string{
 		"server",
 		"--cluster-init",
@@ -297,19 +277,46 @@ func doInstall(g *gocui.Gui, cloudConfig *k3os.CloudConfig) error {
 	scanner := bufio.NewScanner(stdout)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		printToInstallPanel(g, scanner.Text())
+		printToPanel(g, scanner.Text(), installPanel)
 	}
 	scanner = bufio.NewScanner(stderr)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		printToInstallPanel(g, scanner.Text())
+		printToPanel(g, scanner.Text(), installPanel)
 	}
 	return nil
 }
 
-func printToInstallPanel(g *gocui.Gui, message string) {
+func doUpgrade(g *gocui.Gui) error {
+	cmd := exec.Command("/k3os/system/k3os/current/harvester-upgrade.sh")
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		printToPanel(g, scanner.Text(), upgradePanel)
+	}
+	scanner = bufio.NewScanner(stderr)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		printToPanel(g, scanner.Text(), upgradePanel)
+	}
+	return nil
+}
+
+func printToPanel(g *gocui.Gui, message string, panelName string) {
 	g.Update(func(g *gocui.Gui) error {
-		v, err := g.View(installPanel)
+		v, err := g.View(panelName)
 		if err != nil {
 			return err
 		}
@@ -340,28 +347,17 @@ func getRemoteConfig(configURL string) (*config.HarvesterConfig, error) {
 	return harvestCfg, nil
 }
 
-func getHarvesterManifestContent(values map[string]string) string {
-	base := `apiVersion: v1
-kind: Namespace
-metadata:
-  name: harvester-system
----
-apiVersion: helm.cattle.io/v1
-kind: HelmChart
-metadata:
-  name: harvester
-  namespace: kube-system
-spec:
-  chart: https://%{KUBERNETES_API}%/static/charts/harvester-0.1.0.tgz
-  targetNamespace: harvester-system
-  set:
-`
-	var buffer = bytes.Buffer{}
-	buffer.WriteString(base)
-	for k, v := range values {
-		buffer.WriteString(fmt.Sprintf("    %s: %q\n", k, v))
+// harvesterInstalled check existing harvester installation by partition label
+func harvesterInstalled() (bool, error) {
+	output, err := exec.Command("blkid", "-L", "HARVESTER_STATE").CombinedOutput()
+	if err != nil {
+		return false, err
 	}
-	return buffer.String()
+	if string(output) != "" {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func dupStrings(src []string) []string {
