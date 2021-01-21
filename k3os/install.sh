@@ -56,7 +56,7 @@ usage()
     echo ""
     echo "Example: $PROG /dev/vda https://github.com/rancher/k3os/releases/download/v0.8.0/k3os.iso"
     echo ""
-    echo "DEVICE must be the disk that will be partitioned (/dev/vda). If you are using --no-format it should be the device of the K3OS_STATE partition (/dev/vda2)"
+    echo "DEVICE must be the disk that will be partitioned (/dev/vda). If you are using --no-format it should be the device of the HARVESTER_STATE partition (/dev/vda2)"
     echo ""
     echo "The parameters names refer to the same names used in the cmdline, refer to README.md for"
     echo "more info."
@@ -67,10 +67,10 @@ usage()
 do_format()
 {
     if [ "$K3OS_INSTALL_NO_FORMAT" = "true" ]; then
-        STATE=$(blkid -L K3OS_STATE || true)
+        STATE=$(blkid -L HARVESTER_STATE || true)
         if [ -z "$STATE" ] && [ -n "$DEVICE" ]; then
-            tune2fs -L K3OS_STATE $DEVICE
-            STATE=$(blkid -L K3OS_STATE)
+            tune2fs -L HARVESTER_STATE $DEVICE
+            STATE=$(blkid -L HARVESTER_STATE)
         fi
 
         return 0
@@ -107,7 +107,7 @@ do_format()
     fi
     STATE=${PREFIX}${STATE_NUM}
 
-    mkfs.ext4 -F -L K3OS_STATE ${STATE}
+    mkfs.ext4 -F -L HARVESTER_STATE ${STATE}
     if [ -n "${BOOT}" ]; then
         mkfs.vfat -F 32 ${BOOT}
         fatlabel ${BOOT} K3OS_GRUB
@@ -221,7 +221,7 @@ insmod all_video
 insmod gfxterm
 
 menuentry "Start Harvester" {
-  search.fs_label K3OS_STATE root
+  search.fs_label HARVESTER_STATE root
   set sqfile=/k3os/system/kernel/current/kernel.squashfs
   loopback loop0 /\$sqfile
   set root=(\$root)
