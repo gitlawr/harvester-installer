@@ -8,7 +8,7 @@ cd $(dirname $0)/..
 
 echo "Start building ISO"
 
-K3S_VERSION=v1.19.5+k3s2
+K3S_VERSION=v1.19.7+k3s1
 K3S_IMAGE_URL=https://raw.githubusercontent.com/rancher/k3s/${K3S_VERSION}/scripts/airgap/image-list.txt
 OFFLINE_BUILD="1"
 
