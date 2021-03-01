@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/rancher/harvester-installer/pkg/config"
@@ -154,14 +153,6 @@ func TestToCloudConfig(t *testing.T) {
 				t.Fatalf("fail to load %q", testCase.resultFile)
 			}
 			cloudConfig := toCloudConfig(cfg)
-
-			if cfg.Mode == modeCreate {
-				// line order in the write file content is random, do our best
-				content := cloudConfig.WriteFiles[0].Content
-				assert.True(t, strings.HasPrefix(content, "apiVersion: v1"))
-				cloudConfig.WriteFiles[0].Content = ""
-				expected.WriteFiles[0].Content = ""
-			}
 
 			assert.Equal(t, expected, cloudConfig)
 		})

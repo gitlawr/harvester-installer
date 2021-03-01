@@ -2,33 +2,6 @@ ssh_authorized_keys:
 - ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB...
 - github:username
 hostname: myhost
-writeFiles:
-- content: |
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: harvester-system
-    ---
-    apiVersion: helm.cattle.io/v1
-    kind: HelmChart
-    metadata:
-      name: harvester
-      namespace: kube-system
-    spec:
-      chart: https://%{KUBERNETES_API}%/static/charts/harvester-0.1.0.tgz
-      targetNamespace: harvester-system
-      set:
-        minio.persistence.storageClass: "longhorn"
-        containers.apiserver.image.imagePullPolicy: "IfNotPresent"
-        harvester-network-controller.image.pullPolicy: "IfNotPresent"
-        service.harvester.type: "LoadBalancer"
-        containers.apiserver.authMode: "localUser"
-        multus.enabled: "true"
-        longhorn.enabled: "true"
-  encoding: ""
-  owner: root
-  path: /var/lib/rancher/k3s/server/manifests/harvester.yaml
-  permissions: "0600"
 k3os:
   modules:
   - kvm
