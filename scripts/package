@@ -1,2 +1,19 @@
 #!/bin/bash
+set -e
 
+source $(dirname $0)/prepare-harvester
+source $(dirname $0)/version
+
+cd ../package
+
+IMAGE=${REPO}/harvester-bundle:${HARVESTER_TAG}
+DOCKERFILE=Dockerfile
+if [ -e ${DOCKERFILE}.${ARCH} ]; then
+    DOCKERFILE=${DOCKERFILE}.${ARCH}
+fi
+
+cp -r ../manifests .
+cp ../k3os/images/70-iso/charts/harvester-*.tgz .
+
+docker build --build-arg TAG=$TAG --build-arg REPO=$REPO -f ${DOCKERFILE} -t ${IMAGE} .
+echo Built ${IMAGE}
