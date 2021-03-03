@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+source $(dirname $0)/prepare-harvester
 source $(dirname $0)/version
 
 cd $(dirname $0)/..
@@ -12,12 +13,7 @@ K3S_IMAGE_URL=https://raw.githubusercontent.com/rancher/k3s/${K3S_VERSION}/scrip
 
 # Prepare Harvester chart
 mkdir -p k3os/images/70-iso/charts
-harvester_path=../harvester
-if [ ! -d ${harvester_path} ];then
-    git clone --branch master --single-branch --depth 1 https://github.com/rancher/harvester.git /tmp/harvester
-    harvester_path=/tmp/harvester
-fi
-harvester_chart_path=${harvester_path}/deploy/charts/harvester
+harvester_chart_path=${HARVESTER_PATH}/deploy/charts/harvester
 helm package ${harvester_chart_path} -d k3os/images/70-iso/charts
 
 # Prepare Harvester manifests
@@ -72,12 +68,6 @@ if [ -z "${HARVESTER_INSTALLER_OFFLINE_BUILD}" ] && [ ! -f $output_image_tar_fil
   echo "${images}" | xargs -r ctr images export ${output_image_tar_file}
   zstd --rm ${output_image_tar_file} -o ${output_image_tar_file}.zst
 fi
-
-# get harvester version
-pushd ${harvester_path}
-source scripts/version
-export HARVESTER_VERSION=$VERSION
-popd
 
 # Remaster k3os
 cd k3os

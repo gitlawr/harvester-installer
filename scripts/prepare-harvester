@@ -1,0 +1,19 @@
+#!/bin/bash
+
+pushd $(dirname $0)/..
+
+HARVESTER_PATH=../harvester
+if [ ! -d ${HARVESTER_PATH} ];then
+    HARVESTER_PATH=/tmp/harvester
+    if [ ! -d ${HARVESTER_PATH} ];then
+    git clone --branch master --single-branch --depth 1 https://github.com/rancher/harvester.git /tmp/harvester
+    fi
+fi
+
+pushd ${HARVESTER_PATH}
+source scripts/version
+export HARVESTER_VERSION=$VERSION
+export HARVESTER_TAG=$TAG
+popd
+
+popd
