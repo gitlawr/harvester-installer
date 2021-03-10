@@ -48,7 +48,11 @@ func (c *Console) layoutInstall(g *gocui.Gui) error {
 			if cfg.Install.Automatic {
 				logrus.Info("Start automatic installation...")
 				mergo.Merge(c.config, cfg, mergo.WithAppendSlice)
-				initPanel = installPanel
+				if cfg.Install.Mode == modeUpgrade {
+					initPanel = upgradePanel
+				} else {
+					initPanel = installPanel
+				}
 			}
 		}
 
